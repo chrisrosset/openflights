@@ -26,3 +26,26 @@ Test coverage is woefully incomplete, but comes in three flavors:
 ## Installation
 
 See [INSTALL](INSTALL) for system requirements and instructions.
+
+# Development Docker
+
+A basic Docker setup is available to simplify setting up a development environment but requires a
+couple of manual steps to get the site up and running.
+
+1. `cp php/config.sample.php php/config.php` and set `$host = "db";` so the host name matches the
+   the database container host name.
+1. Update `sql/create.sql` to allow database access across containers.
+   ```sql
+    CREATE USER openflights@'172.16.0.0/255.240.0.0';
+    GRANT ALL PRIVILEGES ON flightdb2.* TO openflights@'172.16.0.0/255.240.0.0';
+   ```
+
+1. Run `docker-compose up` to create the containers.
+1. Install local PHP dependencies inside the container.
+   ```
+   # host shell
+   user@host:openflights $ docker exec -it openflights-web-1 bash
+   
+   # container shell
+   root@ee261e8f9103:/# cd /var/www/openflights/ && php /usr/local/bin/composer install
+   ```
