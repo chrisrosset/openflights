@@ -144,13 +144,9 @@ $sth = $dbh->prepare($sql);
 if (!$sth->execute($params)) {
     die('Error;Query ' . print_r($_GET, true) . ' caused database error ' . $sql . ', ' . $sth->errorInfo()[0]);
 }
-$first = true;
 
-if ($export == "export" || $export == "backup") {
-    // Start with byte-order mark to try to clue Excel into realizing that this is UTF-8
-    print "\xEF\xBB\xBFDate,From,To,Flight_Number,Airline,Distance,Duration,Seat,Seat_Type,Class,Reason,Plane,Registration,Trip,Note,From_OID,To_OID,Airline_OID,Plane_OID\r\n";
-}
-$gcmap_city_pairs = ''; // list of city pairs when doing gcmap export.
+$flights = Array();
+
 while ($row = $sth->fetch()) {
     $note = $row["note"];
 
@@ -172,15 +168,6 @@ while ($row = $sth->fetch()) {
         }
     }
 
-    if ($first) {
-        $first = false;
-    } else {
-        if ($export == "export" || $export == "backup") {
-            printf("\r\n");
-        } elseif ($export != "gcmap") {
-            printf("\n");
-        }
-    }
     $src_apid = $row["src_apid"];
     $src_code = format_apcode2($row["src_iata"], $row["src_icao"]);
 
@@ -199,81 +186,129 @@ while ($row = $sth->fetch()) {
         $dst_code = $tmp;
     }
 
-    if ($export == "export" || $export == "backup") {
-        $note = "\"" . $note . "\"";
-        $src_time = $row["src_time"];
+    array_push($flights, Array(
+        "src_code" => $src_code,
+        "src_apid" => $src_apid,
+        "src_date" => $row["src_date"],
+        "src_time" => $row["src_time"],
+        "dst_code" => $dst_code,
+        "dst_apid" => $dst_apid,
+        "code" => $row["code"],
+        "al_name" => $row["al_name"],
+        "al_code" => $al_code,
+        "distance" => $row["distance"],
+        "duration" => $row["duration"],
+        "seat" => $row["seat"],
+        "seat_type" => $row["seat_type"],
+        "class" => $row["class"],
+        "reason" => $row["reason"],
+        "name" => $row["name"],
+        "trid" => $row["trid"],
+        "mode" => $row["mode"],
+        "note" => $note,
+        "registration" => $row["registration"],
+        "fid" => $row["fid"],
+        "alid" => $row["alid"],
+        "plid" => $row["plid"]
+    ));
+}
+
+
+// Format-specific data manipulation and output
+if ($export == "gcmap") {
+
+    // list of city pairs when doing gcmap export.
+    $airport_pair_set = array_reduce($flights, function($carry, $item) {
+        $pair = $item["src_code"] . "-" . $item["dst_code"];
+        $carry[$pair] = $pair; // Using a map as a set
+        return $carry;
+    });
+
+    $url_pairs = urlencode(implode(",", $airport_pair_set));
+
+    // Output the redirect URL.
+    header("Location: http://www.gcmap.com/mapui?P=" . $url_pairs . "&MS=bm");
+} else if ($export == "export" || $export == "backup") {
+
+    $rows = array(
+        // Start with byte-order mark to try to clue Excel into realizing that this is UTF-8
+        "\xEF\xBB\xBFDate,From,To,Flight_Number,Airline,Distance,Duration,Seat,Seat_Type,Class,Reason,Plane,Registration,Trip,Note,From_OID,To_OID,Airline_OID,Plane_OID"
+    );
+
+    function quote_string($str) { return "\"" . $str . "\""; }
+
+    foreach ($flights as $f) {
+
+        $src_time = $f["src_time"];
+
         // Pad time with space if it's known
         if ($src_time) {
             $src_time = " " . $src_time;
         } else {
             $src_time = "";
         }
-        printf(
-            "%s%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s",
-            $row["src_date"],
+
+        array_push($rows, implode(",", array(
+            $f["src_date"],
             $src_time,
-            $src_code,
-            $dst_code,
-            $row["code"],
-            $row["al_name"],
-            $row["distance"],
-            $row["duration"],
-            $row["seat"],
-            $row["seat_type"],
-            $row["class"],
-            $row["reason"],
-            $row["name"],
-            $row["registration"],
-            $row["trid"],
-            $note,
-            $src_apid,
-            $dst_apid,
-            $row["alid"],
-            $row["plid"]
-        );
-    } elseif ($export == "gcmap") {
-        if (!empty($gcmap_city_pairs)) {
-            $gcmap_city_pairs .= ',';
-        }
-        $gcmap_city_pairs .= urlencode($src_code . '-' . $dst_code);
-    } else {
-        // Filter out any carriage returns or tabs
-        $note = str_replace(array("\n", "\r", "\t"), "", $note);
-
-        // Convert mi to km if units=K *and* we're not loading a single flight
-        if ($units == "K" && (!$fid || $fid == "0")) {
-            $row["distance"] = round($row["distance"] * KM_PER_MILE);
-        }
-
-        printf(
-            "%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s",
-            $src_code,
-            $src_apid,
-            $dst_code,
-            $dst_apid,
-            $row["code"],
-            $row["src_date"],
-            $row["distance"],
-            $row["duration"],
-            $row["seat"],
-            $row["seat_type"],
-            $row["class"],
-            $row["reason"],
-            $row["fid"],
-            $row["name"],
-            $row["registration"],
-            $row["alid"],
-            $note,
-            $row["trid"],
-            $row["plid"],
-            $al_code,
-            $row["src_time"],
-            $row["mode"]
-        );
+            $f["src_code"],
+            $f["dst_code"],
+            $f["code"],
+            $f["al_name"],
+            $f["distance"],
+            $f["duration"],
+            $f["seat"],
+            $f["seat_type"],
+            $f["class"],
+            $f["reason"],
+            $f["name"],
+            $f["registration"],
+            $f["trid"],
+            quote_string($f["note"]),
+            $f["src_apid"],
+            $f["dst_apid"],
+            $f["alid"],
+            $f["plid"]
+        )));
     }
-}
 
-if ($export == "gcmap") {
-    // Output the redirect URL.
-    header("Location: http://www.gcmap.com/mapui?P=" . $gcmap_city_pairs . "&MS=bm");
+    print implode("\r\n", $rows);
+} else if ($export == "json") {
+    print(json_encode($flights));
+} else {
+    // Filter out any carriage returns or tabs
+    $note = str_replace(array("\n", "\r", "\t"), "", $note);
+
+    // Convert mi to km if units=K *and* we're not loading a single flight
+    if ($units == "K" && (!$fid || $fid == "0")) {
+        $row["distance"] = round($row["distance"] * KM_PER_MILE);
+    }
+
+    $lines = array_map(function($f) {
+        return implode("\t", array(
+            $f["src_code"] ?? "",          // $src_code,
+            $f["src_apid"] ?? "",          // $src_apid,
+            $f["dst_code"] ?? "",          // $dst_code,
+            $f["dst_apid"] ?? "",          // $dst_apid,
+            $f["code"] ?? "",              // $row["code"],
+            $f["src_date"] ?? "",          // $row["src_date"],
+            $f["distance"] ?? "",          // $row["distance"],
+            $f["duration"] ?? "",          // $row["duration"],
+            $f["seat"] ?? "",              // $row["seat"],
+            $f["seat_type"] ?? "",         // $row["seat_type"],
+            $f["class"] ?? "",             // $row["class"],
+            $f["reason"] ?? "",            // $row["reason"],
+            $f["fid"] ?? "",               // $row["fid"],
+            $f["name"] ?? "",              // $row["name"],
+            $f["registration"] ?? "",      // $row["registration"],
+            $f["alid"] ?? "",              // $row["alid"],
+            $f["note"] ?? "",              // $note,
+            $f["trid"] ?? "",              // $row["trid"],
+            $f["plid"] ?? "",              // $row["plid"],
+            $f["al_code"] ?? "",           // $al_code,
+            $f["src_time"] ?? "",          // $row["src_time"],
+            $f["mode"] ?? ""));            // $row["mode"]
+    }, $flights);
+
+    print(implode("\n", $lines));
 }
