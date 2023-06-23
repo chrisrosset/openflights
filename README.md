@@ -34,14 +34,8 @@ couple of manual steps to get the site up and running.
 
 1. `cp php/config.sample.php php/config.php` and set `$host = "db";` so the host name matches the
    the database container host name.
-1. Update `sql/create.sql` to allow database access across containers.
-   ```sql
-    CREATE USER openflights@'172.16.0.0/255.240.0.0';
-    GRANT ALL PRIVILEGES ON flightdb2.* TO openflights@'172.16.0.0/255.240.0.0';
-   ```
-
-1. Run `docker-compose up` to create the containers.
-1. Install local PHP dependencies inside the container.
+2. Run `docker-compose up` to create the containers.
+3. Install local PHP dependencies inside the container.
    ```
    # host shell
    user@host:openflights $ docker exec -it openflights-web-1 bash
@@ -49,3 +43,4 @@ couple of manual steps to get the site up and running.
    # container shell
    root@ee261e8f9103:/# cd /var/www/openflights/ && php /usr/local/bin/composer install
    ```
+4. You should be able to access the site at `http://localhost:8008`.
