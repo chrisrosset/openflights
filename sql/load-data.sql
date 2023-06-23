@@ -1,3 +1,5 @@
+SET GLOBAL local_infile=1;
+
 \! echo Importing airlines...
 
 LOAD DATA LOCAL INFILE 'data/airlines.dat'
