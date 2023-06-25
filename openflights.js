@@ -154,10 +154,7 @@ function init(){
 
   var m7linesLayer = new ol.layer.Vector({
     source: ol7.sources.lines,
-    style: function (feature) {
-      style7.getText().setText(feature.get('text'));
-      return style7;
-    }
+    style: (feature) => feature.getStyle()
   });
 
   m7 = new ol.Map({
@@ -439,14 +436,9 @@ function projectedPoint(x, y) {
   return point;
 }
 
-function projectedLine(points) {
-  var line = new OpenLayers.Geometry.LineString(points);
-  // line.transform(proj, map.getProjectionObject());
-  return line;
-}
-
 // Draw a flight connecting (x1,y1)-(x2,y2)
 // Note: Values passed in *must already be parsed as floats* or very strange things happen
+// Stroke: "solid", "dash" or undefined
 function drawLine(x1, y1, x2, y2, count, distance, color, stroke) {
   if(! color) {
     color = COLOR_NORMAL;
@@ -456,14 +448,15 @@ function drawLine(x1, y1, x2, y2, count, distance, color, stroke) {
   }
 
   // 1,2 flights as single pixel
-  count = Math.floor(Math.sqrt(count) + 0.5);
+  const strokeWidth = Math.floor(Math.sqrt(count) + 0.5);
+
+  const lineDash = (stroke === "dash" ? [3, 4] : null);
 
   const toXY = (c) => { return {'x': c[0], 'y': c[1]} };
   const fromXY = (xy) => { return [xy.x, xy.y] };
   const gcPathWrap = (s, e) => gcPath(toXY(s), toXY(e));
 
   let xys = [ gcPathWrap([x1, y1], [x2, y2]) ];
-  var paths = [ gcPath(new OpenLayers.Geometry.Point(x1, y1), new OpenLayers.Geometry.Point(x2, y2)) ];
 
   xys.forEach((xy) => {
     let coords = xy.map((e) => ol.proj.fromLonLat(fromXY(e)));
@@ -471,14 +464,20 @@ function drawLine(x1, y1, x2, y2, count, distance, color, stroke) {
 
     const feat7 = new ol.Feature({
       geometry: g,
-      style: new ol.style.Style({
-        stroke : new ol.style.Stroke({
-          color: '#0000ff',
-          width: 2
-        })
-      })
     });
 
+    // TODO: Define reusable styles for different line types.
+    //       Not sure how to deal with the different strokeWidths
+    //       other than by caching them.
+    feat7.setStyle(new ol.style.Style({
+        stroke : new ol.style.Stroke({
+          color,
+          lineDash,
+          width: strokeWidth
+        })
+    }));
+
+    // TODO: return the object and bulk add at call site
     ol7.sources.lines.addFeature(feat7);
 
   });
