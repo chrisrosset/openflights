@@ -183,6 +183,8 @@ function init(){
     layers: [m7airportLayer]
   });
 
+  m7.addInteraction(m7select);
+
   // map = new OpenLayers.Map('map', {
   //   center: new OpenLayers.LonLat(0, 1682837.6144925),
   //   controls: [
