@@ -4,8 +4,16 @@
  */
 
 // Core map features
+var m7;
 var map, proj, drawControls, selectControl, selectedFeature, lineLayer, currentPopup;
 var paneStack = [ "ad" ];
+
+const ol7 = {
+  sources: {
+    airports: new ol.source.Vector({}),
+    lines: new ol.source.Vector({})
+  }
+};
 
 // User settings (defaults)
 var privacy = "Y", flightTotal = 0, prefs_editor = "B", elite = "";
@@ -82,8 +90,6 @@ var re_numeric = /^[0-9]*$/;
 OpenLayers.IMAGE_RELOAD_ATTEMPTS = 3;
 OpenLayers.Util.onImageLoadErrorColor = "transparent";
 
-const vectorSource = new ol.source.Vector({});
-
 // Init Google Charts
 google.load('visualization', '1', {packages: ['corechart']});
 // Call init after google is done initing.
@@ -137,34 +143,35 @@ function init(){
     })
   });
 
-  const m7 = new ol.Map({
+
+  var m7airportLayer = new ol.layer.Vector({
+    source: ol7.sources.airports,
+    style: function (feature) {
+      style7.getText().setText(feature.get('text'));
+      return style7;
+    }
+  });
+
+  var m7linesLayer = new ol.layer.Vector({
+    source: ol7.sources.lines,
+    style: function (feature) {
+      style7.getText().setText(feature.get('text'));
+      return style7;
+    }
+  });
+
+  m7 = new ol.Map({
     target: 'map',
     layers: [
       new ol.layer.Tile({
-        // TODO: attributions
         source: new ol.source.XYZ({
+          attributions: "Map tiles &copy; <a href='https://carto.com/' target='_blank'>CartoDB</a> (CC BY 3.0), data &copy; <a href='https://www.openstreetmap.org' target='_blank'>OSM</a> (ODbL)",
+          attributionsCollapsible: false,
           url: "https://cartodb-basemaps-{1-4}.global.ssl.fastly.net/light_nolabels/{z}/{x}/{y}.png",
-          sentinel: ""
         }),
       }),
-      new ol.layer.Vector({
-        source: vectorSource,
-        // style: new ol.style.Style({
-        //   text: (feature => {
-        //     style7.getText().setText(feature.get('text'));
-        //     return style7;
-        //   }),
-        //   image: new ol.style.Circle({
-        //     radius: 2,
-        //     fill: new ol.style.Fill({color: 'red'})
-        //   })
-        // })
-        //
-        style: function (feature) {
-        style7.getText().setText(feature.get('text'));
-        return style7;
-    }
-      })
+      m7airportLayer,
+      m7linesLayer,
     ],
     view: new ol.View({
       center: [0, 0],
@@ -172,24 +179,25 @@ function init(){
     }),
   });
 
-  console.log(m7);
-
-
-  map = new OpenLayers.Map('map', {
-    center: new OpenLayers.LonLat(0, 1682837.6144925),
-    controls: [
-      new OpenLayers.Control.PanZoom(),
-      new OpenLayers.Control.Navigation({'title': gt.gettext("Toggle pan and region select mode")}),
-      new OpenLayers.Control.LayerSwitcher({'ascending':false, 'title': gt.gettext('Switch map layers')}),
-      new OpenLayers.Control.ScaleLine(),
-      new OpenLayers.Control.OverviewMap({'title': gt.gettext("Toggle overview map")}),
-      new OpenLayers.Control.Attribution()
-    ] });
-
-  // Horrible hack to stop OpenLayers 2 from showing ZL < 2
-  map.events.register('zoomend', this, function (event) {
-    if(map.getZoom() < 2) { map.zoomTo(2); }
+  m7select = new ol.interaction.Select({
+    layers: [m7airportLayer]
   });
+
+  // map = new OpenLayers.Map('map', {
+  //   center: new OpenLayers.LonLat(0, 1682837.6144925),
+  //   controls: [
+  //     new OpenLayers.Control.PanZoom(),
+  //     new OpenLayers.Control.Navigation({'title': gt.gettext("Toggle pan and region select mode")}),
+  //     new OpenLayers.Control.LayerSwitcher({'ascending':false, 'title': gt.gettext('Switch map layers')}),
+  //     new OpenLayers.Control.ScaleLine(),
+  //     new OpenLayers.Control.OverviewMap({'title': gt.gettext("Toggle overview map")}),
+  //     new OpenLayers.Control.Attribution()
+  //   ] });
+
+  // // Horrible hack to stop OpenLayers 2 from showing ZL < 2
+  // map.events.register('zoomend', this, function (event) {
+  //   if(map.getZoom() < 2) { map.zoomTo(2); }
+  // });
 
 var poliLayer = new OpenLayers.Layer.XYZ(
     "Political",
@@ -199,7 +207,6 @@ var poliLayer = new OpenLayers.Layer.XYZ(
         "https://cartodb-basemaps-1.global.ssl.fastly.net/light_nolabels/${z}/${x}/${y}.png",
         "https://cartodb-basemaps-1.global.ssl.fastly.net/light_nolabels/${z}/${x}/${y}.png"
     ], {
-        attribution: "Map tiles &copy; <a href='https://carto.com/' target='_blank'>CartoDB</a> (CC BY 3.0), data &copy; <a href='https://www.openstreetmap.org' target='_blank'>OSM</a> (ODbL)",
         sphericalMercator: true,
         transitionEffect: 'resize',
         wrapDateLine: true
@@ -308,23 +315,23 @@ var earthLayer = new OpenLayers.Layer.XYZ(
 						       }}),
 						 renderers: renderer,
 						 strategies: [strategy]});
-  map.addLayers([poliLayer, artLayer, earthLayer, lineLayer, airportLayer]);
+  // map.addLayers([poliLayer, artLayer, earthLayer, lineLayer, airportLayer]);
 
   selectControl = new OpenLayers.Control.SelectFeature(airportLayer, {onSelect: onAirportSelect,
 							              onUnselect: onAirportUnselect});
-  map.addControl(selectControl);
-  selectControl.activate();
+  // map.addControl(selectControl);
+  // selectControl.activate();
 
-  // When using the earth map layer, change the font color from black to white, since the map is mostly dark colors.
-  map.events.on({
-    "changelayer":function () {
-      if(earthLayer.visibility) {
-        style.defaultStyle.fontColor = "#fff";
-      } else {
-        style.defaultStyle.fontColor = "#000";
-      }
-    }
-  });
+  // // When using the earth map layer, change the font color from black to white, since the map is mostly dark colors.
+  // map.events.on({
+  //   "changelayer":function () {
+  //     if(earthLayer.visibility) {
+  //       style.defaultStyle.fontColor = "#fff";
+  //     } else {
+  //       style.defaultStyle.fontColor = "#000";
+  //     }
+  //   }
+  // });
 
   // Extract any arguments from URL
   var query;
@@ -394,7 +401,7 @@ var earthLayer = new OpenLayers.Layer.XYZ(
     }
     $('b_less').disabled = true;
 
-    map.zoomTo(2);
+    // map.zoomTo(2);
   }
 
   OpenLayers.Util.alphaHack = function() { return false; };
@@ -426,13 +433,13 @@ function parseUrl()
 
 function projectedPoint(x, y) {
   var point = new OpenLayers.Geometry.Point(x, y);
-  point.transform(proj, map.getProjectionObject());
+  // point.transform(proj, map.getProjectionObject());
   return point;
 }
 
 function projectedLine(points) {
   var line = new OpenLayers.Geometry.LineString(points);
-  line.transform(proj, map.getProjectionObject());
+  // line.transform(proj, map.getProjectionObject());
   return line;
 }
 
@@ -472,9 +479,7 @@ function drawLine(x1, y1, x2, y2, count, distance, color, stroke) {
 
 
   xys.forEach((xy) => {
-    console.log("xy", xy)
     let coords = xy.map((e) => ol.proj.fromLonLat(fromXY(e)));
-    console.log(coords);
     g = new ol.geom.LineString(coords, 'XY');
 
     const feat7 = new ol.Feature({
@@ -487,7 +492,7 @@ function drawLine(x1, y1, x2, y2, count, distance, color, stroke) {
       })
     });
 
-    vectorSource.addFeature(feat7);
+    ol7.sources.lines.addFeature(feat7);
 
   });
 
@@ -566,7 +571,7 @@ function drawAirport(airportLayer, apdata, name, city, country, count, formatted
       name: formattedName
     });
 
-    vectorSource.addFeature(feat7);
+    ol7.sources.airports.addFeature(feat7);
   }
 
   return feature;
@@ -3408,7 +3413,7 @@ function clearFilter(refresh_all) {
   selectAirline(0);
   if(refresh_all && lasturl == URL_ROUTES) {
     var extent = airportLayer.getDataExtent();
-    if(extent) map.zoomToExtent(extent);
+    // if(extent) map.zoomToExtent(extent);
     lasturl = URL_MAP;
   }
   refresh(refresh_all);
