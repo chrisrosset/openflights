@@ -464,21 +464,6 @@ function drawLine(x1, y1, x2, y2, count, distance, color, stroke) {
 
   let xys = [ gcPathWrap([x1, y1], [x2, y2]) ];
   var paths = [ gcPath(new OpenLayers.Geometry.Point(x1, y1), new OpenLayers.Geometry.Point(x2, y2)) ];
-  // NOTE: I don't think these copies are needed anymore in OpenLayers 7.
-  // Path is in or extends into east (+) half, so we have to make a -360 copy
-  if(x1 > 0 || x2 > 0) {
-    paths.push(gcPath(new OpenLayers.Geometry.Point(x1-360, y1), new OpenLayers.Geometry.Point(x2-360, y2)));
-  }
-  // Path is in or extends into west (-) half, so we have to make a +360 copy
-  if(x1 < 0 || x2 < 0) {
-    paths.push(gcPath(new OpenLayers.Geometry.Point(x1+360, y1), new OpenLayers.Geometry.Point(x2+360, y2)));
-  }
-  var features = [];
-  for(i = 0; i < paths.length; i++) {
-    features.push(new OpenLayers.Feature.Vector(projectedLine(paths[i]),
-						{count: count, color: color, stroke: stroke}));
-  }
-
 
   xys.forEach((xy) => {
     let coords = xy.map((e) => ol.proj.fromLonLat(fromXY(e)));
@@ -498,8 +483,7 @@ function drawLine(x1, y1, x2, y2, count, distance, color, stroke) {
 
   });
 
-
-  return features;
+  return [];
 }
 
 //
