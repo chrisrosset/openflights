@@ -557,6 +557,21 @@ function drawAirport(airportLayer, apdata, name, city, country, count, formatted
       name: formattedName
     });
 
+    feat7.setProperties({
+      apid: apid,
+      coreid: coreid,
+      code: code,
+      name: formattedName,
+      apdata: apdata,
+      desc: desc,
+      rdesc: rdesc,
+      opacity: opacity,
+      icon: airportIcons[colorIndex][0],
+      size: airportIcons[colorIndex][1],
+      index: parseInt(count, 10),
+      offset: Math.floor(-airportIcons[colorIndex][1]/2)
+    });
+
     ol7.sources.airports.addFeature(feat7);
   }
 
