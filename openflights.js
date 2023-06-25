@@ -170,8 +170,8 @@ function init(){
           url: "https://cartodb-basemaps-{1-4}.global.ssl.fastly.net/light_nolabels/{z}/{x}/{y}.png",
         }),
       }),
-      m7airportLayer,
       m7linesLayer,
+      m7airportLayer,
     ],
     view: new ol.View({
       center: [0, 0],
