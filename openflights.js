@@ -82,6 +82,8 @@ var re_numeric = /^[0-9]*$/;
 OpenLayers.IMAGE_RELOAD_ATTEMPTS = 3;
 OpenLayers.Util.onImageLoadErrorColor = "transparent";
 
+const vectorSource = new ol.source.Vector({});
+
 // Init Google Charts
 google.load('visualization', '1', {packages: ['corechart']});
 // Call init after google is done initing.
@@ -103,6 +105,75 @@ function init(){
 
   var projectionName = "EPSG:4326";  // spherical Mercator
   proj = new OpenLayers.Projection(projectionName);
+
+
+  var style7 = new ol.style.Style({
+    // TODO: Maybe use icons?
+    // image: new ol.style.Icon({
+    //   anchor: [0.5, 0.5],
+    //   anchorXUnits: "fraction",
+    //   anchorYUnits: "fraction",
+    //   src: "/img/icon_plane-15x15.png",
+    // }),
+
+    // TODO: how to override this when adding features?
+    image: new ol.style.Circle({
+      radius: 3,
+      fill: new ol.style.Fill({color: 'black'})
+    }),
+    text: new ol.style.Text({
+      font: '9px Calibri,sans-serif',
+      fill: new ol.style.Fill({ color: '#000' }),
+      stroke: new ol.style.Stroke({
+        color: '#fff', width: 2
+      }),
+      offsetX: 8,
+      offsetY: 8,
+    }),
+
+    stroke : new ol.style.Stroke({
+      color: '#ee9900',
+      width: 1
+    })
+  });
+
+  const m7 = new ol.Map({
+    target: 'map',
+    layers: [
+      new ol.layer.Tile({
+        // TODO: attributions
+        source: new ol.source.XYZ({
+          url: "https://cartodb-basemaps-{1-4}.global.ssl.fastly.net/light_nolabels/{z}/{x}/{y}.png",
+          sentinel: ""
+        }),
+      }),
+      new ol.layer.Vector({
+        source: vectorSource,
+        // style: new ol.style.Style({
+        //   text: (feature => {
+        //     style7.getText().setText(feature.get('text'));
+        //     return style7;
+        //   }),
+        //   image: new ol.style.Circle({
+        //     radius: 2,
+        //     fill: new ol.style.Fill({color: 'red'})
+        //   })
+        // })
+        //
+        style: function (feature) {
+        style7.getText().setText(feature.get('text'));
+        return style7;
+    }
+      })
+    ],
+    view: new ol.View({
+      center: [0, 0],
+      zoom: 2,
+    }),
+  });
+
+  console.log(m7);
+
 
   map = new OpenLayers.Map('map', {
     center: new OpenLayers.LonLat(0, 1682837.6144925),
@@ -378,7 +449,13 @@ function drawLine(x1, y1, x2, y2, count, distance, color, stroke) {
   // 1,2 flights as single pixel
   count = Math.floor(Math.sqrt(count) + 0.5);
 
+  const toXY = (c) => { return {'x': c[0], 'y': c[1]} };
+  const fromXY = (xy) => { return [xy.x, xy.y] };
+  const gcPathWrap = (s, e) => gcPath(toXY(s), toXY(e));
+
+  let xys = [ gcPathWrap([x1, y1], [x2, y2]) ];
   var paths = [ gcPath(new OpenLayers.Geometry.Point(x1, y1), new OpenLayers.Geometry.Point(x2, y2)) ];
+  // NOTE: I don't think these copies are needed anymore in OpenLayers 7.
   // Path is in or extends into east (+) half, so we have to make a -360 copy
   if(x1 > 0 || x2 > 0) {
     paths.push(gcPath(new OpenLayers.Geometry.Point(x1-360, y1), new OpenLayers.Geometry.Point(x2-360, y2)));
@@ -392,6 +469,29 @@ function drawLine(x1, y1, x2, y2, count, distance, color, stroke) {
     features.push(new OpenLayers.Feature.Vector(projectedLine(paths[i]),
 						{count: count, color: color, stroke: stroke}));
   }
+
+
+  xys.forEach((xy) => {
+    console.log("xy", xy)
+    let coords = xy.map((e) => ol.proj.fromLonLat(fromXY(e)));
+    console.log(coords);
+    g = new ol.geom.LineString(coords, 'XY');
+
+    const feat7 = new ol.Feature({
+      geometry: g,
+      style: new ol.style.Style({
+        stroke : new ol.style.Stroke({
+          color: '#0000ff',
+          width: 2
+        })
+      })
+    });
+
+    vectorSource.addFeature(feat7);
+
+  });
+
+
   return features;
 }
 
@@ -451,6 +551,23 @@ function drawAirport(airportLayer, apdata, name, city, country, count, formatted
     index: count,
     offset: Math.floor(-airportIcons[colorIndex][1]/2)
   };
+
+  {
+    // TODO: This needs to be moved out and batched by calling `addFeatures`
+    // TODO: Add name, icon, etc.
+    const feat7 = new ol.Feature({
+      geometry: new ol.geom.Point(ol.proj.fromLonLat([x, y])),
+      text: code,
+      style: new ol.style.Style({
+        text: {
+          text: code
+        }
+      }),
+      name: formattedName
+    });
+
+    vectorSource.addFeature(feat7);
+  }
 
   return feature;
 }
