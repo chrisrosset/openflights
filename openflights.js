@@ -145,10 +145,59 @@ function init(){
 
 
   var m7airportLayer = new ol.layer.Vector({
-    source: ol7.sources.airports,
-    style: function (feature) {
-      style7.getText().setText(feature.get('text'));
-      return style7;
+    source: new ol.source.Cluster({
+      distance: 10,
+      source: ol7.sources.airports
+    }),
+    style: (feature) => {
+      // TODO: Improve clustering logic
+      // The old code has more complex logic for which airport dominates,
+      // handles ties better, and more.
+
+      // Sort by number of flights linked to the airport (i.e. `index`).
+      const feats = feature.get('features')
+                           .map(f => f.getProperties())
+                           .sort((a, b) => b.index - a.index);
+
+
+      const flightCount = feats.reduce((acc, f) => acc + f.index, 0);
+
+      // TODO: Use airport icons instead of colored blobs
+      let radius = 3;
+      let airportColor = '#000';
+
+      if (flightCount > 50) {
+        radius = 7;
+        airportColor = '#0f0';
+      } else if (flightCount > 10) {
+        airportColor = '#00f';
+        radius = 5;
+      }
+
+      const labelOffset = 6 + radius;
+
+      let image = new ol.style.Circle({
+        radius,
+        fill: new ol.style.Fill({color: airportColor})
+      });
+
+      let clusterText = feats[0].code + (feats.length === 1 ? "" : "+");
+
+      // TODO: How to avoid creating new objects over and over again?
+      let style = new ol.style.Style({
+        image,
+        text: new ol.style.Text({
+          font: '10px Calibri,sans-serif',
+          text: clusterText,
+          fill: new ol.style.Fill({ color: '#000' }),
+          stroke: new ol.style.Stroke({
+            color: '#fff', width: 2
+          }),
+          offsetX: labelOffset,
+          offsetY: labelOffset,
+        }),
+      });
+      return style;
     }
   });
 
@@ -1383,10 +1432,13 @@ function clearMap() {
   for(p = 0; p < popups.length; p++) {
     popups[p].destroy();
   }
+
+  // TODO: clear ol7 sources
 }
 
 // Reinsert all flights, airports from database result
 function updateMap(str, url){
+  // TODO: clear ol7 sources
   lineLayer.destroyFeatures();
   airportLayer.destroyFeatures();
   lasturl = url; // used for refresh
