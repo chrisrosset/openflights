@@ -1409,14 +1409,16 @@ function radioValue(radio) {
 
 // Clear all flights, airports and popups
 function clearMap() {
-  lineLayer.destroyFeatures();
-  airportLayer.destroyFeatures();
-  var popups = map.popups;
-  for(p = 0; p < popups.length; p++) {
-    popups[p].destroy();
-  }
+  Object.values(ol7.sources).forEach((src) => {
+    console.log(src)
+    src.clear()
+  });
 
-  // TODO: clear ol7 sources
+  // TODO: we don't have v7 popups yet but we don't have the old map now
+  // var popups = map.popups;
+  // for(p = 0; p < popups.length; p++) {
+  //   popups[p].destroy();
+  // }
 }
 
 // Reinsert all flights, airports from database result
