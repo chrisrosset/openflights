@@ -207,7 +207,7 @@ function init(){
   });
 
   // TODO: Artistic tile layer
-  // URL: "https://stamen-tiles.a.ssl.fastly.net/watercolor/${z}/${x}/${y}.png"
+  // URL: "https://stamen-tiles.a.ssl.fastly.net/watercolor/${z}/${x}/${y}.jpg"
   // attribution: "Map tiles &copy; <a href='http://maps.stamen.com/' target='_blank'>Stamen</a> (CC BY 3.0), data &copy; <a href='https://www.openstreetmap.org' target='_blank'>OSM</a> (CC BY SA)",
 
   // TODO: Satellite tile layer
@@ -253,7 +253,6 @@ function init(){
   //     new OpenLayers.Control.OverviewMap({'title': gt.gettext("Toggle overview map")}),
   //     new OpenLayers.Control.Attribution()
   //   ] });
-
 
   lineLayer = new OpenLayers.Layer.Vector(gt.gettext("Flights"),
 					{ projection: projectionName,
@@ -1653,9 +1652,9 @@ function listFlights(str, desc, id) {
 // newWindow: true if we want target URL to open in a new window.
 function exportFlights(type, newWindow) {
   if(type == "KML") {
-    url = "https://" + location.host + "/php/kml.php?" + lastQuery;
+    url = location.origin + "/php/kml.php?" + lastQuery;
   } else {
-    url = "https://" + location.host + "/php/flights.php?" + lastQuery + "&export=" + type;
+    url = location.origin + "/php/flights.php?" + lastQuery + "&export=" + type;
   }
   if(newWindow) {
     window.open(url, "openflights_export");
@@ -3094,7 +3093,7 @@ function login(str, param) {
   case 2:
     // Successful but need to switch UI language, so reload, stripping out any "?lang" in the URL
     $("loginstatus").innerHTML = "<B>" + gt.gettext("Loading") + "</B>";
-    location.href = "https://" + location.host + location.pathname;
+    location.href = location.origin + location.pathname;
     break;
 
   default:
