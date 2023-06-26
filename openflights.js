@@ -507,7 +507,7 @@ function drawLine(x1, y1, x2, y2, count, distance, color, stroke) {
 
   let xys = [ gcPathWrap([x1, y1], [x2, y2]) ];
 
-  xys.forEach((xy) => {
+  const lineFeatures = xys.map((xy) => {
     let coords = xy.map((e) => ol.proj.fromLonLat(fromXY(e)));
     g = new ol.geom.LineString(coords, 'XY');
 
@@ -526,12 +526,10 @@ function drawLine(x1, y1, x2, y2, count, distance, color, stroke) {
         })
     }));
 
-    // TODO: return the object and bulk add at call site
-    ol7.sources.lines.addFeature(feat7);
-
+    return feat7;
   });
 
-  return [];
+  return lineFeatures;
 }
 
 //
@@ -1510,19 +1508,21 @@ function updateMap(str, url){
       // apid1 0, x1 1, y1 2, apid2 3, x2 4, y2 5, count 6, distance 7, future 8, mode 9
       var rCol = rows[r].split(";");
       if(rCol[8] == "Y") {
-	stroke = "dash";
+        stroke = "dash";
       } else {
-	stroke = "solid";
+        stroke = "solid";
       }
       if(url == URL_ROUTES) {
-	color = COLOR_ROUTE;
+        color = COLOR_ROUTE;
       } else {
-	color = modecolors[rCol[9]];
-	if(!color) color = COLOR_NORMAL;
+        color = modecolors[rCol[9]];
+        if(!color) color = COLOR_NORMAL;
       }
-      lineLayer.addFeatures(drawLine(parseFloat(rCol[1]), parseFloat(rCol[2]),
-				     parseFloat(rCol[4]), parseFloat(rCol[5]),
-				     rCol[6], rCol[7], color, stroke));
+
+      ol7.sources.lines.addFeatures(
+        drawLine(parseFloat(rCol[1]), parseFloat(rCol[2]),
+                 parseFloat(rCol[4]), parseFloat(rCol[5]),
+                 rCol[6], rCol[7], color, stroke));
     }
   }
 
