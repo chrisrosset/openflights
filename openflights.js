@@ -1391,7 +1391,8 @@ function clearMap() {
 
 // Reinsert all flights, airports from database result
 function updateMap(str, url){
-  // TODO: clear ol7 sources
+  clearMap();
+
   lineLayer.destroyFeatures();
   airportLayer.destroyFeatures();
   lasturl = url; // used for refresh
