@@ -206,6 +206,14 @@ function init(){
     style: (feature) => feature.getStyle()
   });
 
+  // TODO: Artistic tile layer
+  // URL: "https://stamen-tiles.a.ssl.fastly.net/watercolor/${z}/${x}/${y}.png"
+  // attribution: "Map tiles &copy; <a href='http://maps.stamen.com/' target='_blank'>Stamen</a> (CC BY 3.0), data &copy; <a href='https://www.openstreetmap.org' target='_blank'>OSM</a> (CC BY SA)",
+
+  // TODO: Satellite tile layer
+  // URL: "https://api.tiles.mapbox.com/v4/mapbox.satellite/${z}/${x}/${y}.png?access_token=pk.eyJ1IjoianBhdG9rYWwiLCJhIjoiY2lyNmFyZThqMDBiNWcybTFlOWdkZGk1MiJ9.6_VWU3skRwM68ASapMLIQg"
+  // attribution: "Map tiles &copy; <a href='https://www.mapbox.com/maps/satellite' target='_blank'>Mapbox</a>"
+
   m7 = new ol.Map({
     target: 'map',
     layers: [
@@ -231,6 +239,10 @@ function init(){
 
   m7.addInteraction(m7select);
 
+  // TODO: Support map controls: tile switcher, popups, etc.
+  // Most controls used by the old version are now 3rd party libraries.
+  // See: https://openlayers.org/3rd-party/
+  //
   // map = new OpenLayers.Map('map', {
   //   center: new OpenLayers.LonLat(0, 1682837.6144925),
   //   controls: [
@@ -242,47 +254,6 @@ function init(){
   //     new OpenLayers.Control.Attribution()
   //   ] });
 
-  // // Horrible hack to stop OpenLayers 2 from showing ZL < 2
-  // map.events.register('zoomend', this, function (event) {
-  //   if(map.getZoom() < 2) { map.zoomTo(2); }
-  // });
-
-var poliLayer = new OpenLayers.Layer.XYZ(
-    "Political",
-    [
-        "https://cartodb-basemaps-1.global.ssl.fastly.net/light_nolabels/${z}/${x}/${y}.png",
-        "https://cartodb-basemaps-1.global.ssl.fastly.net/light_nolabels/${z}/${x}/${y}.png",
-        "https://cartodb-basemaps-1.global.ssl.fastly.net/light_nolabels/${z}/${x}/${y}.png",
-        "https://cartodb-basemaps-1.global.ssl.fastly.net/light_nolabels/${z}/${x}/${y}.png"
-    ], {
-        sphericalMercator: true,
-        transitionEffect: 'resize',
-        wrapDateLine: true
-    });
-
-var artLayer = new OpenLayers.Layer.XYZ(
-    "Artistic",
-    [
-        "https://stamen-tiles.a.ssl.fastly.net/watercolor/${z}/${x}/${y}.png"
-    ], {
-        attribution: "Map tiles &copy; <a href='http://maps.stamen.com/' target='_blank'>Stamen</a> (CC BY 3.0), data &copy; <a href='https://www.openstreetmap.org' target='_blank'>OSM</a> (CC BY SA)",
-        sphericalMercator: true,
-        transitionEffect: 'resize',
-        wrapDateLine: true
-    });
-  artLayer.setVisibility(false);
-
-var earthLayer = new OpenLayers.Layer.XYZ(
-    "Satellite",
-    [
-        "https://api.tiles.mapbox.com/v4/mapbox.satellite/${z}/${x}/${y}.png?access_token=pk.eyJ1IjoianBhdG9rYWwiLCJhIjoiY2lyNmFyZThqMDBiNWcybTFlOWdkZGk1MiJ9.6_VWU3skRwM68ASapMLIQg"
-    ], {
-        attribution: "Map tiles &copy; <a href='https://www.mapbox.com/maps/satellite' target='_blank'>Mapbox</a>",
-        sphericalMercator: true,
-        transitionEffect: 'resize',
-        wrapDateLine: true
-    });
-  earthLayer.setVisibility(false);
 
   lineLayer = new OpenLayers.Layer.Vector(gt.gettext("Flights"),
 					{ projection: projectionName,
@@ -363,7 +334,6 @@ var earthLayer = new OpenLayers.Layer.XYZ(
 						       }}),
 						 renderers: renderer,
 						 strategies: [strategy]});
-  // map.addLayers([poliLayer, artLayer, earthLayer, lineLayer, airportLayer]);
 
   selectControl = new OpenLayers.Control.SelectFeature(airportLayer, {onSelect: onAirportSelect,
 							              onUnselect: onAirportUnselect});
