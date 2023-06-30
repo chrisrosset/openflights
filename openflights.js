@@ -1392,8 +1392,6 @@ function clearMap() {
 function updateMap(str, url){
   clearMap();
 
-  lineLayer.destroyFeatures();
-  airportLayer.destroyFeatures();
   lasturl = url; // used for refresh
 
   var master = str.split("\n");
