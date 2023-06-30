@@ -1724,44 +1724,78 @@ function showTop10(responseText) {
     limit = "10";
   }
 
+  function createAirportLink(airportId, linkText) {
+    const airportLink = document.createElement('a');
+    airportLink.setAttribute('href', '#');
+    airportLink.setAttribute('onclick', `JavaScript:selectAirport(${airportId});`);
+    airportLink.appendChild(document.createTextNode(linkText));
+    return airportLink;
+  }
+
+  // data: a list of Element 2-tuples to be inserted as the rows
+  function buildSubTable(titleText, data) {
+    const table = document.createElement('table');
+    const headerRow = document.createElement('tr');
+    const title = document.createElement('th');
+    title.setAttribute('colspan', 2);
+    title.innerText = titleText;
+    headerRow.appendChild(title);
+    table.appendChild(headerRow);
+
+    for (dataRow of data) {
+      const tr = document.createElement('tr');
+      const nameCell = document.createElement('td');
+      const countCell = document.createElement('td');
+      countCell.setAttribute('style', 'text-align: right; padding-left: 10px');
+      nameCell.appendChild(dataRow[0]);
+      countCell.appendChild(dataRow[1]);
+      tr.append(nameCell, countCell);
+      table.appendChild(tr);
+    }
+
+    return table.outerHTML;
+  };
+
+  const routesContents = topData.routes.map((route) => {
+    const routeSpan = document.createElement('span');
+    routeSpan.append(createAirportLink(route.src_apid, route.src_code));
+    routeSpan.append(document.createTextNode('\u2194'));
+    routeSpan.append(createAirportLink(route.dst_apid, route.dst_code));
+    return [routeSpan, document.createTextNode(route.count)];
+  });
+
+  const airportsContents = topData.airports.map((airport) => {
+    const desc = `${airport.name.substring(0,20)} (${airport.code})`;
+    return [createAirportLink(airport.apid, desc), document.createTextNode(airport.count)];
+  });
+
+  const airlinesContents = topData.airlines.map((airline) => {
+    const link = document.createElement('a');
+    link.setAttribute('href', '#');
+    link.setAttribute('onclick', `JavaScript:selectAirline("${airline.apid}"); refresh(false);`);
+    link.appendChild(document.createTextNode(airline.name));
+    return [link, document.createTextNode(airline.count)];
+  });
+
+  let planesContents = topData.planes.map((plane) => {
+    return [document.createTextNode(plane.name), document.createTextNode(plane.count)];
+  });
+
+  // TODO: still needs the `document.createElement` treatment
   bigtable = "<table style='width: 100%; border-collapse: collapse'><td style='vertical-align: top; padding-right: 10px'><img src='/img/close.gif' onclick='JavaScript:closePane();' width=17 height=17><form id='top10form'>";
   table = "<br>" + gt.gettext("Show...") + "<br>";
   table += createSelectFromArray('limit', toplimits, "updateTop10()", limit) + "<br>";
   table += gt.gettext("Sort by...") + "<br>";
   table += createSelectFromArray('mode', topmodes, "updateTop10()", mode) + "<br>";
   bigtable += table + "</form></td>";
-
-  bigtable += "<td style='vertical-align: top; background-color: #ddd; padding: 0px 10px'>";
-  table = "<table><tr><th colspan=3'>" + gt.gettext("Routes") + "</th></tr>";
-  for (const route of topData.routes) {
-    table += "<tr><td><a href='#' onclick='JavaScript:selectAirport(" + route.src_apid + ");'>" + route.src_code + "</a>&harr;" +
-      "<a href='#' onclick='JavaScript:selectAirport(" + route.dst_apid + ");'>" + route.dst_code + "</a></td>" +
-      "<td style='text-align: right; padding-left: 10px'>" + route.count + "</td></tr>";
-  }
-  table += "</table>";
-
-  bigtable += table + "</td><td style='vertical-align: top; padding: 0px 10px'>";
-  table = "<table><tr><th colspan=3'>" + gt.gettext("Airports") + "</th></tr>";
-  for (const airport of topData.airports) {
-    desc = airport.name.substring(0,20) + " (" + airport.code + ")";
-    table += "<tr><td><a href='#' onclick='JavaScript:selectAirport(" + airport.apid + ");'>" + desc + "</a></td><td style='text-align: right; padding-left: 10px'>" + airport.count + "</td>";
-  }
-  table += "</table>";
-
-  bigtable += table + "</td><td style='vertical-align: top; background-color: #ddd; padding: 0px 10px'>";
-  table = "<table><tr><th colspan=3'>" + gt.gettext("Airlines") + "</th></tr>";
-  for (const airline of topData.airlines) {
-    table += "<tr><td><a href='#' onclick='JavaScript:selectAirline(" + airline.alid + ");refresh(false);'>" + airline.name + "</a></td><td style='text-align: right; padding-left: 10px'>" + airline.count + "</td>";
-  }
-  table += "</table>";
-
-  bigtable += table + "</td><td style='vertical-align: top; padding-left: 10px;'>";
-  table = "<table><tr><th colspan=3>" + gt.gettext("Planes") + "</th></tr>";
-  for (const plane of topData.planes) {
-    table += "<tr><td>" + plane.name + "</td><td style='text-align: right; padding-left: 10px'>" + plane.count + "</td>";
-  }
-  table += "</table>";
-  bigtable += table + "</td>";
+  bigtable += "<td style='vertical-align: top; background-color: #ddd; padding: 0px 10px'>"
+              + buildSubTable(gt.gettext("Routes"), routesContents) + "</td>";
+  bigtable += "<td style='vertical-align: top; padding: 0px 10px'>"
+              + buildSubTable(gt.gettext("Airports"), airportsContents) + "</td>";
+  bigtable += "<td style='vertical-align: top; background-color: #ddd; padding: 0px 10px'>"
+              + buildSubTable(gt.gettext("Airlines"), airlinesContents) +  "</td>";
+  bigtable += "<td style='vertical-align: top; padding-left: 10px;'>"
+              + buildSubTable(gt.gettext("Planes"), planesContents) + "</td>";
 
   $("result").innerHTML = bigtable;
   openPane("result");
