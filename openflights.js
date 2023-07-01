@@ -162,9 +162,61 @@ function init(){
 
       const flightCount = feats.reduce((acc, f) => acc + f.index, 0);
 
+      const count = flightCount;
+
+      /*
+      // Last airport is always the largest
+      last = feature.cluster.length - 1;
+      if(feature.cluster[last].attributes.index > 2) {
+        // One airport is dominant, copy its attributes into cluster
+        feature.attributes.apid = feature.cluster[last].attributes.apid;
+        feature.attributes.coreid = feature.cluster[last].attributes.coreid;
+        feature.attributes.code = feature.cluster[last].attributes.code + "+";
+        feature.attributes.desc = feature.cluster[last].attributes.desc;
+        feature.attributes.rdesc = feature.cluster[last].attributes.rdesc;
+        feature.attributes.icon = feature.cluster[last].attributes.icon;
+        feature.attributes.size = feature.cluster[last].attributes.size;
+        feature.attributes.offset = feature.cluster[last].attributes.offset;
+        feature.attributes.name = feature.cluster[last].attributes.name + " \u2295";
+      } else {
+        // No dominant airport, show cluster icon with aggregate info
+        name = "";
+        for(c = last; c >= 0; c--) {
+          if(c < last) name += ", ";
+          name += feature.cluster[c].attributes.code;
+        }
+        feature.attributes.icon = "/img/icon_cluster.png";
+        feature.attributes.code = "";
+        feature.attributes.size = clusterRadius(feature);
+        feature.attributes.offset = -clusterRadius(feature) / 2;
+        feature.attributes.name = name;
+      }
+      */
+
+      // Select icon based on number of flights (0...airportIcons.length-1)
+      var colorIndex = Math.floor((count / airportMaxFlights) * airportIcons.length) + 1;
+
+      // Two or less flights: smallest dot
+      if(count <= 2 || colorIndex < 0) {
+        colorIndex = 0;
+      }
+      // More than two flights: at least 2nd smallest
+      if(count > 2) {
+        colorIndex = Math.max(1, colorIndex);
+      }
+      // Max out at top color
+      // Core airport of route map always uses max color
+      if(colorIndex >= airportIcons.length /* || apid == coreid */) {
+        colorIndex = airportIcons.length - 1;
+      }
+
+      console.log(colorIndex);
+      console.log(airportIcons[colorIndex]);
+
       // TODO: Use airport icons instead of colored blobs
       let radius = 3;
       let airportColor = '#000';
+      let airportIcon = airportIcons[colorIndex];
 
       if (flightCount > 50) {
         radius = 7;
@@ -174,12 +226,16 @@ function init(){
         radius = 5;
       }
 
-      const labelOffset = 6 + radius;
 
-      let image = new ol.style.Circle({
-        radius,
-        fill: new ol.style.Fill({color: airportColor})
+      let image = new ol.style.Icon({
+        src: airportIcon[0]
       });
+
+      const labelOffset = airportIcon[1] / 2 + 2;
+      // let image = new ol.style.Circle({
+      //   radius,
+      //   fill: new ol.style.Fill({color: airportColor})
+      // });
 
       let clusterText = feats[0].code + (feats.length === 1 ? "" : "+");
 
