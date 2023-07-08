@@ -2,12 +2,16 @@ openapi: 3.1.0
 info:
   version: 0.0.1
   title: OpenFlights Internal API Documentation
+servers:
+  - url: 'http://localhost:8007'
 externalDocs:
   description: Project source code
   url: https://github.com/jpatokal/openflights
 tags:
   - name: login
     description: User session management
+  - name: trip
+    description: Operations related to trips defined by a user
 paths:
   /php/login.php:
     post:
@@ -57,11 +61,98 @@ paths:
       tags:
         - login
       summary: Logs out current logged in user session
-      parameters: []
+      parameters:
+        - name: trid
+          schema:
+            type: integer
       responses:
         '200':
           description: Successful logout. This response has no content.
 
+  /php/trip.php:
+    put:
+      tags: [trip]
+      summary: "Define a new trip"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TripDetails'
+      responses:
+        '200':
+          description: "Trip successfully created"
+          content:
+            application/json:
+              schema:
+                  $ref: '#/components/schemas/TripDetailsWithID'
+    get:
+      tags: [trip]
+      summary: "Retrieve trip details"
+      parameters:
+        - name: trid
+          description: Trip ID
+          in: query
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: "Trip details"
+          content:
+            application/json:
+              schema:
+                  $ref: '#/components/schemas/TripDetailsWithID'
+        '404':
+          description: "Trip not found"
+          content:
+            application/json:
+              schema:
+                  $ref: '#/components/schemas/MessageResponse'
+    post:
+      tags: [trip]
+      summary: "Edit an existing trip"
+      requestBody:
+          content:
+            application/json:
+              schema:
+                  $ref: '#/components/schemas/TripDetails'
+      responses:
+        '200':
+          description: "Trip successfully deleted"
+          content:
+            application/json:
+              schema:
+                  $ref: '#/components/schemas/MessageResponse'
+        '404':
+          description: "Trip not found"
+          content:
+            application/json:
+              schema:
+                  $ref: '#/components/schemas/MessageResponse'
+    delete:
+      tags: [trip]
+      summary: "Delete a trip"
+      parameters:
+        - name: trid
+          description: Trip ID
+          in: query
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: "Trip successfully deleted"
+          content:
+            application/json:
+              schema:
+                  $ref: '#/components/schemas/MessageResponse'
+        '404':
+          description: "Trip not found"
+          content:
+            application/json:
+              schema:
+                  $ref: '#/components/schemas/MessageResponse'
 components:
   schemas:
     DistanceUnit:
@@ -124,3 +215,31 @@ components:
         message:
           type: string
           example: "Login failed"
+    MessageResponse:
+      type: object
+      properties:
+        message:
+          type: string
+          example: "success/error message"
+    TripDetails:
+      type: object
+      properties:
+        name:
+          type: string
+          example: "My first trip around the world!"
+        url:
+          type: string
+          example: "summerphotos.example.com"
+        privacy:
+          type: string
+          example: "Y (public) or O (open) or N (private)"
+    TripDetailsWithID:
+      allOf:
+        - $ref: '#/components/schemas/TripDetails'
+        - type: object
+          required:
+            - trid
+          properties:
+            trid:
+              type: integer
+              example: 123

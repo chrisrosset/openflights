@@ -25,6 +25,12 @@ function json_error($msg, $detail = '') {
     die(json_encode(array("status" => 0, "message" => _($msg) . ' ' . $detail)));
 }
 
+function respond_with_json($code, $data) {
+    header('Content-Type: application/json; charset=utf-8');
+    http_response_code($code);
+    exit(json_encode($data));
+}
+
 //
 // Standard formatting of airport data
 // Input: row: associative array containing iata, icao
